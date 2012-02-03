@@ -38,14 +38,10 @@ public class Main {
 	private static HashMap<Integer, Channel> canais = new HashMap<Integer, Channel>();
 	private static EChannelsEhandlers dadosDesS;
 	
-	static {
-		//Des-serializando...
+	static { //escrevendo em dadosDesS o objeto guardado em dados.out com as informações dos canais, contextos e tratadores
 		try {
 			FileInputStream fIn = new FileInputStream("dados.out");
 			ObjectInputStream in = new ObjectInputStream(fIn);
-
-
-			//dados des-serializados
 			dadosDesS = (EChannelsEhandlers)in.readObject();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -59,18 +55,6 @@ public class Main {
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
 		PackManager.v().getPack("jtp").add(new Transform("jtp.appletContextsTransformer", AppletContextsTransformer.v()));
 		soot.Main.main(args);
-	}
-
-	private static void retrieveActiveBodies() {
-		for (Iterator<SootClass> klassIt = Scene.v().getApplicationClasses().iterator(); klassIt.hasNext();) {
-			final SootClass klass = (SootClass) klassIt.next();
-			List<SootMethod> methods = klass.getMethods();
-			//itera nos metodos
-			for (Iterator<SootMethod> methodsIt = methods.iterator(); methodsIt.hasNext(); ) {
-				SootMethod sootMethod = (SootMethod) methodsIt.next();
-				sootMethod.retrieveActiveBody();
-			}
-		}
 	}
 
 	private static void printMethod(Body body) {
@@ -184,16 +168,16 @@ public class Main {
 		}
 		System.exit(0);
 	}*/
-	
+
 	private static int channelID(Channel channel) {
 		return dadosDesS.listaDeCanaisSerializavel.indexOf(channel);
 	}
-	
+
 	private static String getSignatureFromSite(String site) {
 		Pattern exp = Pattern.compile("\\s+?\\w+\\s+(\\w+)\\s+(\\w+)\\((,?\\s?(\\w+)\\s+\\w+)?+\\)");
 		Matcher matcher = exp.matcher(site);
 		StringBuffer signature = new StringBuffer();
-//		System.out.println(matcher.groupCount());
+
 		if (matcher.matches()) {
 			signature.append(matcher.group(1)); //tipo de retorno
 			signature.append(" ");
@@ -206,9 +190,7 @@ public class Main {
 //			}
 			signature.append(")");
 		}
-		
-//		System.out.println(signature.toString());
-		
+
 		return signature.toString();
 	}
 }
