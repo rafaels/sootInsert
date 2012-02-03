@@ -44,6 +44,7 @@ public class Main {
 					String signature = Util.getSignatureFromSite(site);
 					if (!methodToChannels.containsKey(signature)) {
 						methodToChannels.put(signature, new ArrayList<Channel>());
+						System.out.println(signature);
 					}
 
 					methodToChannels.get(signature).add(canal);

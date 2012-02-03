@@ -1,6 +1,7 @@
 package transformers;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import soot.Body;
@@ -33,7 +34,41 @@ public class AppletContextsTransformer extends BodyTransformer {
 	
 	@Override
 	protected void internalTransform(Body body, String phaseName, Map options) {
-		System.out.println(body.getMethod().getSignature());
+		SootMethod method = body.getMethod();
+		String signature = Util.getSignatureFromSignature(method.getSignature());
+		List<Channel> channels = Main.getChannelsFromSite(signature);
+
+		if (channels != null) {
+			//todo método termina com return?
+			Chain<Unit> units = body.getUnits();
+
+			Unit returnStmt = units.getLast();
+			Unit init       = units.getFirst(); //inicio da trap
+			Unit last       = units.getPredOf(returnStmt); //fim da trap
+
+			//construindo a trap
+			GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt);
+			units.insertAfter(gotoReturn, last);
+
+			soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions"));
+			body.getLocals().add(catchRefLocal);
+
+			soot.jimple.CaughtExceptionRef caughtRef = soot.jimple.Jimple.v().newCaughtExceptionRef();
+			soot.jimple.Stmt caughtIdentity = soot.jimple.Jimple.v().newIdentityStmt(catchRefLocal, caughtRef);
+			units.insertAfter(caughtIdentity, gotoReturn);
+			//fim catch
+
+			SootClass echannelExceptionKlass = Scene.v().getSootClass("user.EChannelExceptions");
+
+			Trap t = Jimple.v().newTrap(echannelExceptionKlass, init, gotoReturn, caughtIdentity);
+			body.getTraps().add(t);
+
+			SootMethodRef ref = echannelExceptionKlass.getMethodByName("throwIt").makeRef();
+
+			InvokeStmt invokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(ref, IntConstant.v(Util.channelID(channels.get(0)))));
+
+			units.insertAfter(invokeThrowItStmt, caughtIdentity);
+		}
 	}
 
 	private static void trataCanais() throws IOException, ClassNotFoundException {

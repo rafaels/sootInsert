@@ -68,4 +68,16 @@ public class Util {
 		return signature.toString();
 	}
 
+	public static String getSignatureFromSignature(String signature) {
+		Pattern exp = Pattern.compile("<.+:\\s(.+)>");
+		Matcher matcher = exp.matcher(signature);
+		StringBuffer signatureBuffer = new StringBuffer();
+
+		if (matcher.matches()) {
+			signatureBuffer.append(matcher.group(1)); //tipo de retorno
+		}
+
+		return signatureBuffer.toString();
+	}
+
 }
