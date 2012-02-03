@@ -23,7 +23,6 @@ import source.Channel;
 import source.Context;
 import util.Util;
 
-
 public class AppletContextsTransformer extends BodyTransformer {
 
 	private static AppletContextsTransformer instance = new AppletContextsTransformer();
@@ -34,7 +33,7 @@ public class AppletContextsTransformer extends BodyTransformer {
 	
 	@Override
 	protected void internalTransform(Body body, String phaseName, Map options) {
-		Util.printMethod(body);
+		System.out.println(body.getMethod().getSignature());
 	}
 
 	private static void trataCanais() throws IOException, ClassNotFoundException {
