@@ -2,36 +2,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 
-import soot.Body;
-import soot.Local;
 import soot.PackManager;
-import soot.Scene;
-import soot.SootClass;
-import soot.SootMethod;
-import soot.SootMethodRef;
 import soot.Transform;
-import soot.Trap;
-import soot.Unit;
-import soot.jimple.CaughtExceptionRef;
-import soot.jimple.GotoStmt;
-import soot.jimple.IdentityStmt;
-import soot.jimple.IntConstant;
-import soot.jimple.InvokeStmt;
-import soot.jimple.Jimple;
-import soot.jimple.ParameterRef;
-import soot.options.Options;
-import soot.toolkits.graph.TrapUnitGraph;
-import soot.toolkits.graph.UnitGraph;
-import soot.util.Chain;
 import source.Channel;
-import source.Context;
 import source.EChannelsEhandlers;
 
 public class Main {
