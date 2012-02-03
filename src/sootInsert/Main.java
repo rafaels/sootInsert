@@ -1,15 +1,19 @@
+package sootInsert;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.HashMap;
+import java.util.List;
 
 import soot.PackManager;
 import soot.Transform;
 import source.Channel;
 import source.EChannelsEhandlers;
+import transformers.AppletContextsTransformer;
 
 public class Main {
-	private static HashMap<Integer, Channel> canais = new HashMap<Integer, Channel>();
+	private static HashMap<String, List<Channel>> methodToChannels = new HashMap<String, List<Channel>>();
 	private static EChannelsEhandlers dadosDesS;
 	
 	public static EChannelsEhandlers getDadosCanais() {
