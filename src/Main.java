@@ -14,10 +14,18 @@ import soot.PackManager;
 import soot.Scene;
 import soot.SootClass;
 import soot.SootMethod;
+import soot.SootMethodRef;
+import soot.Trap;
 import soot.Unit;
+import soot.Value;
+import soot.jimple.Constant;
 import soot.jimple.IdentityStmt;
+import soot.jimple.IntConstant;
+import soot.jimple.InvokeStmt;
 import soot.jimple.Jimple;
 import soot.jimple.ParameterRef;
+import soot.jimple.Stmt;
+import soot.jimple.internal.InvokeExprBox;
 import soot.options.Options;
 import soot.toolkits.graph.TrapUnitGraph;
 import soot.toolkits.graph.UnitGraph;
@@ -63,8 +71,8 @@ public class Main {
 
 		Scene.v().loadNecessaryClasses();
 		retrieveActiveBodies();
-		trataCanais();
-		run();
+//		trataCanais();
+//		run();
 		PackManager.v().writeOutput();
 	}
 
@@ -80,64 +88,6 @@ public class Main {
 		}
 	}
 
-	private static void run() throws IOException, ClassNotFoundException {
-		SootClass testeKlass = Scene.v().getSootClass("UserAccessJCML");
-		SootClass tratadorKlass = Scene.v().getSootClass("UserAccessEchannel");
-
-		SootMethod testeMethod = testeKlass.getMethodByName("addCredits");
-		SootMethod tratadorMethod = tratadorKlass.getMethodByName("MH1");
-		testeMethod.retrieveActiveBody();
-		tratadorMethod.retrieveActiveBody();
-
-		Body testeBody = testeMethod.getActiveBody();
-		printMethod(testeBody);
-
-		Chain testeUnits = testeBody.getUnits();
-		Body tratadorBody = tratadorMethod.getActiveBody();
-		Chain tratadorUnits = tratadorBody.getUnits();
-
-		//O codigo abaixo serah necessario apenas se desejar-mos inserir no inicio do metodo apos a primeira instrucao
-		Object init = testeUnits.getFirst();
-
-
-		for (Iterator<Object> unitsIterator = testeUnits.iterator(); unitsIterator.hasNext(); ) {
-			Unit unit = (Unit) unitsIterator.next();
-
-
-			if(testeUnits.getFirst() == unit) {
-				continue;
-			}
-
-			if(unit instanceof IdentityStmt) {
-				IdentityStmt identityStmt = (IdentityStmt) unit;
-
-				if(identityStmt.getRightOp() instanceof ParameterRef) {
-					continue;
-				}
-			}
-
-			init = unit;
-			break;
-		}
-
-		tratadorUnits.removeFirst();
-		tratadorUnits.removeLast();
-
-		System.out.println("ULTIMO "+ testeUnits.getLast());
-		testeUnits.insertAfter(tratadorUnits, init);
-		//testeUnits.insertBefore(tratadorUnits, testeUnits.getLast()); //Sempre insere antes do return do mehtodo, melhor assim?
-		Unit first = (Unit) testeUnits.getFirst();
-		Unit last  = (Unit) testeUnits.getLast();
-		Unit handler = (Unit) tratadorUnits.getFirst();
-		Jimple.v().newTrap(Scene.v().getSootClass("EChannelExceptions"), first, last, handler);
-
-		testeBody.getLocals().addAll(tratadorBody.getLocals());
-
-		printMethod(testeBody);
-
-		testeMethod.setActiveBody(testeBody);
-	}
-
 	private static void printMethod(Body body) {
 		System.out.println(body.getMethod().getSignature());
 		UnitGraph graph = new TrapUnitGraph(body);
@@ -148,23 +98,49 @@ public class Main {
 		System.out.println();		
 	}
 	
+	private static void printTraps(SootMethod method) {
+		UnitGraph graph = new TrapUnitGraph(method.getActiveBody());
+		
+		for (Iterator<Unit> graphIt = graph.iterator(); graphIt.hasNext();) { //itera nos statements atrás de throws
+			Unit unit = graphIt.next();
+			System.out.println(unit);
+		}
+		
+		System.out.println(method.getActiveBody().getTraps().size());
+		for (Iterator<Trap> i = method.getActiveBody().getTraps().iterator(); i.hasNext();) {
+			Trap trap = i.next();
+			System.out.println(trap.getException());
+		}
+	}
+	
 	private static void trataCanais() throws IOException, ClassNotFoundException {
-		SootClass klass = Scene.v().getSootClass("UserAccessJCML");
+		SootClass klass = Scene.v().getSootClass("user.UserAccessJCML");
 
 		for (Channel canal : dadosDesS.listaDeCanaisSerializavel) {
-			System.out.println(canal.nome);
 			for (Context context : canal.listaE) {
-				System.out.println(context.nomeContext);
 				for (String site : context.raisingSites) {
-					System.out.println(site);
-					System.out.println(getSignatureFromSite(site));
-					SootMethod method = klass.getMethod("void addCredits(short)");
-					System.out.println(method.getSignature());
+					SootMethod method = klass.getMethod(getSignatureFromSite(site));
+					Body body = method.getActiveBody();
+//					Chain<Unit> units = body.getUnits();
+//					Unit init = units.getFirst();
+//					Unit last = units.getLast();
+//
+//					SootClass echannelKlass = Scene.v().getSootClass("user.EChannelExceptions");
+//					SootMethodRef ref = echannelKlass.getMethodByName("throwIt").makeRef();
+					
+//					InvokeStmt n = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(ref, IntConstant.v(channelID(canal))));
+//					units.add(n);
+					
+//					Jimple.v().newTrap(Scene.v().getSootClass("user.EChannelExceptions"), init, last, n);
+//					method.setActiveBody(body);
+					printMethod(body);
+					System.out.println();
+					printTraps(method);
+					System.out.println();
 					System.out.println();
 				}
 			}
 		}
-		System.exit(0);
 	}
 	
 	private static int channelID(Channel channel) {
