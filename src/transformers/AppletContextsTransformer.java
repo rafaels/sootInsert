@@ -2,6 +2,8 @@ package transformers;
 import java.util.List;
 import java.util.Map;
 
+import polyglot.ast.Instanceof;
+
 import soot.Body;
 import soot.BodyTransformer;
 import soot.Scene;
@@ -35,32 +37,50 @@ public class AppletContextsTransformer extends BodyTransformer {
 		if (channels != null) { //é um método que está associado ao menos com um canal
 			transformContext(body, signature, channels);
 		}
+
+		if (method.getSignature().matches("<.*:\\svoid process\\(javacard.framework.APDU\\)>")) {
+			transformProccess(body);
+		}
 	}
 
-	//usado para aplicar as transformações nos raising sites
+	private void transformProccess(Body body) {
+		Chain<Unit> units = body.getUnits();
+		Unit init         = units.getFirst(); //inicio da trap
+		Unit last         = units.getLast(); //fim da trap
+
+		ReturnVoidStmt returnStmt = Jimple.v().newReturnVoidStmt();
+	}
+
+    //usado para aplicar as transformações nos raising sites
 	private void transformContext(Body body, String signature, List<Channel> channels) {
 		//todo método termina com return?
 		Chain<Unit> units = body.getUnits();
 
-		Unit returnStmt = units.getLast();
 		Unit init       = units.getFirst(); //inicio da trap
-		Unit last       = units.getPredOf(returnStmt); //fim da trap
+		Unit last       = units.getLast(); //fim da trap
+		Unit returnStmt = units.getLast();
+
+		if (!(returnStmt instanceof ReturnStmt)) {
+			returnStmt = Jimple.v().newReturnVoidStmt();
+			units.addLast(returnStmt);
+
+			GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt); //goto return
+			units.insertAfter(gotoReturn, last);
+			last = gotoReturn;
+		}
 
 		//construindo a trap
-		GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt); //goto return
-		units.insertAfter(gotoReturn, last);
-
 		soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions")); // local que guarda a exceção capturada => e
 		body.getLocals().add(catchRefLocal);
 
 		soot.jimple.CaughtExceptionRef caughtRef = soot.jimple.Jimple.v().newCaughtExceptionRef();
 		soot.jimple.Stmt caughtIdentity = soot.jimple.Jimple.v().newIdentityStmt(catchRefLocal, caughtRef);
-		units.insertAfter(caughtIdentity, gotoReturn);
+		units.insertAfter(caughtIdentity, last);
 		//fim catch
 
 		SootClass echannelExceptionKlass = Scene.v().getSootClass("user.EChannelExceptions");
 
-		Trap t = Jimple.v().newTrap(echannelExceptionKlass, init, gotoReturn, caughtIdentity);
+		Trap t = Jimple.v().newTrap(echannelExceptionKlass, init, last, caughtIdentity);
 		body.getTraps().add(t);
 
 		SootMethodRef throwItRef = echannelExceptionKlass.getMethodByName("throwIt").makeRef();    //getReason()
