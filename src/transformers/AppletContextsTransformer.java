@@ -100,6 +100,7 @@ public class AppletContextsTransformer extends BodyTransformer {
 		units.insertAfter(ifStmt1, gotoInvokeThrowIt);
 		units.insertAfter(finalInvokeThrowItStmt, ifStmt1);
 		units.insertAfter(isoInvokeThrowItStmt, finalInvokeThrowItStmt);
+		units.addLast(Jimple.v().newReturnVoidStmt());
 	}
 
     //usado para aplicar as transformações nos raising sites
@@ -155,5 +156,6 @@ public class AppletContextsTransformer extends BodyTransformer {
 			units.insertBefore(jcmlCodeAssignment, finalInvokeThrowItStmt);
 			units.insertAfter(ifStmt, jcmlCodeAssignment);
 		}
+		units.addLast(Jimple.v().newReturnVoidStmt());
 	}
 }
