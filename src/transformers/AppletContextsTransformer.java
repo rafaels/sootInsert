@@ -7,6 +7,7 @@ import polyglot.ast.Instanceof;
 import soot.Body;
 import soot.BodyTransformer;
 import soot.Scene;
+import soot.ShortType;
 import soot.SootClass;
 import soot.SootFieldRef;
 import soot.SootMethod;
@@ -47,7 +48,6 @@ public class AppletContextsTransformer extends BodyTransformer {
 		Chain<Unit> units = body.getUnits();
 		Unit init         = units.getFirst(); //inicio da trap
 		Unit last         = units.getLast(); //fim da trap
-
 		ReturnVoidStmt returnStmt = Jimple.v().newReturnVoidStmt();
 	}
 
@@ -88,8 +88,8 @@ public class AppletContextsTransformer extends BodyTransformer {
 
 		VirtualInvokeExpr eReason = Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef); //e.getReason()
 
-		soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r3", soot.RefType.v("java.lang.short"));
-		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r4", soot.RefType.v("java.lang.short"));
+		soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r3", ShortType.v());
+		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r4", ShortType.v());
 		body.getLocals().add(eReasonLocal);
 		body.getLocals().add(jcmlCodeLocal);
 
@@ -102,7 +102,7 @@ public class AppletContextsTransformer extends BodyTransformer {
 		for (Channel channel : channels) {
 			InvokeStmt channelInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, IntConstant.v(Util.channelID(channel))));
 
-			SootFieldRef jcmlErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, Util.eChannelTipoToStatic(channel.tipo), soot.RefType.v("java.lang.short"), true);
+			SootFieldRef jcmlErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, Util.eChannelTipoToStatic(channel.tipo), ShortType.v(), true);
 			StaticFieldRef invariantErrorCode = Jimple.v().newStaticFieldRef(jcmlErrorCodeRef);
 			Stmt jcmlCodeAssignment = Jimple.v().newAssignStmt(jcmlCodeLocal, invariantErrorCode);
 
