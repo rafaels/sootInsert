@@ -1,6 +1,4 @@
 package transformers;
-import java.io.IOException;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -8,16 +6,14 @@ import soot.Body;
 import soot.BodyTransformer;
 import soot.Scene;
 import soot.SootClass;
+import soot.SootField;
+import soot.SootFieldRef;
 import soot.SootMethod;
 import soot.SootMethodRef;
 import soot.Trap;
 import soot.Unit;
-import soot.jimple.GotoStmt;
-import soot.jimple.IntConstant;
-import soot.jimple.InvokeStmt;
-import soot.jimple.Jimple;
-import soot.toolkits.graph.TrapUnitGraph;
-import soot.toolkits.graph.UnitGraph;
+import soot.Value;
+import soot.jimple.*;
 import soot.util.Chain;
 import sootInsert.Main;
 import source.Channel;
@@ -47,10 +43,10 @@ public class AppletContextsTransformer extends BodyTransformer {
 			Unit last       = units.getPredOf(returnStmt); //fim da trap
 
 			//construindo a trap
-			GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt);
+			GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt); //goto return
 			units.insertAfter(gotoReturn, last);
 
-			soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions"));
+			soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions")); // local que guarda a exceção capturada => e
 			body.getLocals().add(catchRefLocal);
 
 			soot.jimple.CaughtExceptionRef caughtRef = soot.jimple.Jimple.v().newCaughtExceptionRef();
@@ -63,75 +59,30 @@ public class AppletContextsTransformer extends BodyTransformer {
 			Trap t = Jimple.v().newTrap(echannelExceptionKlass, init, gotoReturn, caughtIdentity);
 			body.getTraps().add(t);
 
-			SootMethodRef ref = echannelExceptionKlass.getMethodByName("throwIt").makeRef();
+			SootMethodRef throwItRef = echannelExceptionKlass.getMethodByName("throwIt").makeRef();    //getReason()
+			SootMethodRef getReasonRef = echannelExceptionKlass.getSuperclass().getMethodByName("getReason").makeRef();//throwIt()
+			
+			VirtualInvokeExpr eReason = Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef); //e.getReason()
+			InvokeStmt finalInvokeThrowItStmt = Jimple.v().newInvokeStmt(eReason); //vai pro final
+			
+			Unit next = caughtIdentity;
+			
+			for (Channel channel : channels) {
+				InvokeStmt invokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, IntConstant.v(Util.channelID(channel))));
 
-			InvokeStmt invokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(ref, IntConstant.v(Util.channelID(channels.get(0)))));
-
-			units.insertAfter(invokeThrowItStmt, caughtIdentity);
-		}
-	}
-
-	private static void trataCanais() throws IOException, ClassNotFoundException {
-		SootClass klass = Scene.v().getSootClass("user.UserAccessJCML");
-		for (Channel canal : Main.getDadosCanais().listaDeCanaisSerializavel) {
-			for (Context context : canal.listaE) {
-				for (String site : context.raisingSites) {
-					boolean addg = false , addc = false;
-					SootMethod method = klass.getMethod(Util.getSignatureFromSite(site));
-					Body body = method.getActiveBody();
-					Chain<Unit> units = body.getUnits();
-					Unit init = units.getFirst();
-					Unit methodReturn = units.getLast();
-					Unit last = units.getPredOf(methodReturn);
-
-					//goto
-					UnitGraph graph = new TrapUnitGraph(body);
-					for (Iterator<Unit> graphIt = graph.iterator(); graphIt.hasNext();) {
-						Unit unit = graphIt.next();
-						if (unit instanceof GotoStmt){
-							addg = true;
-							break;
-						}
-					}
-					if (addg == false) {
-						GotoStmt g = Jimple.v().newGotoStmt(methodReturn);
-						units.insertBefore(g, methodReturn);
-					} else {
-						last = units.getPredOf(last);
-					}
-					//fim goto
-
-					// catch
-					if(method.getActiveBody().getTraps().size() != 0)
-						addc = true;
-
-					if(addc == false){
-				        soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions"));
-				        body.getLocals().add(catchRefLocal);
-				        soot.jimple.CaughtExceptionRef caughtRef = soot.jimple.Jimple.v().newCaughtExceptionRef();
-				        soot.jimple.Stmt caughtIdentity = soot.jimple.Jimple.v().newIdentityStmt(catchRefLocal, caughtRef);
-				        units.insertAfter(caughtIdentity , units.getPredOf(units.getLast()));
-				        //fim catch
-
-						Trap t = Jimple.v().newTrap(Scene.v().getSootClass("user.EChannelExceptions"), init, last, caughtIdentity);
-						body.getTraps().add(t);
-					}
-
-					SootClass echannelKlass = Scene.v().getSootClass("user.EChannelExceptions");
-					SootMethodRef ref = echannelKlass.getMethodByName("throwIt").makeRef();
-
-					InvokeStmt n = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(ref, IntConstant.v(Util.channelID(canal))));
-
-					body.getUnits().insertAfter(n , units.getPredOf(units.getLast()));
-
-					method.setActiveBody(body);
-					Util.printMethod(body);
-					//System.out.println();
-					Util.printTraps(method);
-					System.out.println();
-					System.out.println();
-				}
+				SootFieldRef invariantErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, "SW_INVARIANT_ERROR", soot.RefType.v("java.lang.short"), true);
+				StaticFieldRef invariantErrorCode = Jimple.v().newStaticFieldRef(invariantErrorCodeRef);
+				
+				
+				Value condition = Jimple.v().newCmpExpr(eReason, invariantErrorCode);
+				
+				IfStmt ifStmt = Jimple.v().newIfStmt(condition, invokeThrowItStmt);
+				
+				units.insertAfter(ifStmt, next);
+				next = invokeThrowItStmt;
 			}
+			
+			units.insertAfter(finalInvokeThrowItStmt, next);
 		}
 	}
 }
