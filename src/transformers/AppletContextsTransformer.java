@@ -65,20 +65,20 @@ public class AppletContextsTransformer extends BodyTransformer {
 		SootClass isoExceptionKlass = Scene.v().getSootClass("javacard.framework.ISOException");
 
 		SootMethodRef isoThrowItRef = isoExceptionKlass.getMethodByName("throwIt").makeRef();                      //ISOException.throwIt(short)
-		SootMethodRef eChannellThrowItRef = echannelExceptionKlass.getMethodByName("throwIt").makeRef();           //EChannelExceptions.throwIt(short)
+		SootMethodRef eChannelThrowItRef = echannelExceptionKlass.getMethodByName("throwIt").makeRef();           //EChannelExceptions.throwIt(short)
 		SootMethodRef getReasonRef = echannelExceptionKlass.getSuperclass().getMethodByName("getReason").makeRef();//EChannelExceptions.getReason()
 
 		VirtualInvokeExpr eReason = Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef);                  //e.getReason()
 
 		soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
-		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
 		body.getLocals().add(eReasonLocal);
+		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
 		body.getLocals().add(jcmlCodeLocal);
 
 		Stmt eReasonLocalAssignment = Jimple.v().newAssignStmt(eReasonLocal, eReason);
 		units.insertAfter(eReasonLocalAssignment, caughtIdentity);
 
-		InvokeStmt finalInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(eChannellThrowItRef, eReasonLocal));
+		InvokeStmt finalInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(eChannelThrowItRef, eReasonLocal));
 
 		InvokeStmt isoInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(isoThrowItRef, eReasonLocal));
 
@@ -111,7 +111,7 @@ public class AppletContextsTransformer extends BodyTransformer {
 		Unit last       = units.getLast(); //fim da trap
 
 		//construindo a trap
-		soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions")); // local que guarda a exceção capturada => e
+		soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), soot.RefType.v("user.EChannelExceptions")); // local que guarda a exceção capturada => e
 		body.getLocals().add(catchRefLocal);
 
 		soot.jimple.CaughtExceptionRef caughtRef = soot.jimple.Jimple.v().newCaughtExceptionRef();
@@ -129,9 +129,9 @@ public class AppletContextsTransformer extends BodyTransformer {
 
 		VirtualInvokeExpr eReason = Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef); //e.getReason()
 
-		soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r3", ShortType.v());
-		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r4", ShortType.v());
+		soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
 		body.getLocals().add(eReasonLocal);
+		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
 		body.getLocals().add(jcmlCodeLocal);
 
 		Stmt eReasonLocalAssignment = Jimple.v().newAssignStmt(eReasonLocal, eReason);
