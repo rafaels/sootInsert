@@ -109,16 +109,6 @@ public class AppletContextsTransformer extends BodyTransformer {
 
 		Unit init       = units.getFirst(); //inicio da trap
 		Unit last       = units.getLast(); //fim da trap
-		Unit returnStmt = units.getLast();
-
-		if (!(returnStmt instanceof ReturnStmt)) {
-			returnStmt = Jimple.v().newReturnVoidStmt();
-			units.addLast(returnStmt);
-
-			GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt); //goto return
-			units.insertAfter(gotoReturn, last);
-			last = gotoReturn;
-		}
 
 		//construindo a trap
 		soot.Local catchRefLocal = soot.jimple.Jimple.v().newLocal("$r2", soot.RefType.v("user.EChannelExceptions")); // local que guarda a exceção capturada => e
