@@ -63,26 +63,36 @@ public class AppletContextsTransformer extends BodyTransformer {
 			SootMethodRef getReasonRef = echannelExceptionKlass.getSuperclass().getMethodByName("getReason").makeRef();//throwIt()
 			
 			VirtualInvokeExpr eReason = Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef); //e.getReason()
-			InvokeStmt finalInvokeThrowItStmt = Jimple.v().newInvokeStmt(eReason); //vai pro final
-			
-			Unit next = caughtIdentity;
-			
-			for (Channel channel : channels) {
-				InvokeStmt invokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, IntConstant.v(Util.channelID(channel))));
 
+			soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r3", soot.RefType.v("java.lang.short"));
+			soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r4", soot.RefType.v("java.lang.short"));
+			body.getLocals().add(eReasonLocal);
+			body.getLocals().add(jcmlCodeLocal);
+			
+			Stmt eReasonLocalAssignment = Jimple.v().newAssignStmt(eReasonLocal, eReason);
+			units.insertAfter(eReasonLocalAssignment, caughtIdentity);
+			
+			InvokeStmt finalInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, eReasonLocal));
+			units.insertAfter(finalInvokeThrowItStmt, eReasonLocalAssignment);
+						
+			for (Channel channel : channels) {
+				InvokeStmt channelInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, IntConstant.v(Util.channelID(channel))));
+				
 				SootFieldRef invariantErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, "SW_INVARIANT_ERROR", soot.RefType.v("java.lang.short"), true);
 				StaticFieldRef invariantErrorCode = Jimple.v().newStaticFieldRef(invariantErrorCodeRef);
+				Stmt jcmlCodeAssignment = Jimple.v().newAssignStmt(jcmlCodeLocal, invariantErrorCode);
 				
+				Value condition = Jimple.v().newEqExpr(eReasonLocal, jcmlCodeLocal);//colocar os dois em outro canto
 				
-				Value condition = Jimple.v().newCmpExpr(eReason, invariantErrorCode);
+				IfStmt ifStmt = Jimple.v().newIfStmt(condition, channelInvokeThrowItStmt);
 				
-				IfStmt ifStmt = Jimple.v().newIfStmt(condition, invokeThrowItStmt);
-				
-				units.insertAfter(ifStmt, next);
-				next = invokeThrowItStmt;
+				units.insertAfter(channelInvokeThrowItStmt, finalInvokeThrowItStmt);
+				units.insertBefore(jcmlCodeAssignment, finalInvokeThrowItStmt);
+				units.insertAfter(ifStmt, jcmlCodeAssignment);
 			}
 			
-			units.insertAfter(finalInvokeThrowItStmt, next);
+			System.out.println(body);
+			Util.printMethod(body);
 		}
 	}
 }
