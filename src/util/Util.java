@@ -80,4 +80,14 @@ public class Util {
 		return signatureBuffer.toString();
 	}
 
+	public static String eChannelTipoToStatic(String tipo) {
+		if (tipo.equals("RequiresException"))
+			return "SW_REQUIRES_ERROR";
+		if (tipo.equals("EnsuresException"))
+			return "SW_ENSURES_ERROR";
+		if (tipo.equals("InvariantException"))
+			return "SW_INVARIANT_ERROR";
+		
+		throw new IllegalArgumentException();
+	}
 }

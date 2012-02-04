@@ -78,8 +78,8 @@ public class AppletContextsTransformer extends BodyTransformer {
 			for (Channel channel : channels) {
 				InvokeStmt channelInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, IntConstant.v(Util.channelID(channel))));
 				
-				SootFieldRef invariantErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, "SW_INVARIANT_ERROR", soot.RefType.v("java.lang.short"), true);
-				StaticFieldRef invariantErrorCode = Jimple.v().newStaticFieldRef(invariantErrorCodeRef);
+				SootFieldRef jcmlErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, Util.eChannelTipoToStatic(channel.tipo), soot.RefType.v("java.lang.short"), true);
+				StaticFieldRef invariantErrorCode = Jimple.v().newStaticFieldRef(jcmlErrorCodeRef);
 				Stmt jcmlCodeAssignment = Jimple.v().newAssignStmt(jcmlCodeLocal, invariantErrorCode);
 				
 				Value condition = Jimple.v().newEqExpr(eReasonLocal, jcmlCodeLocal);//colocar os dois em outro canto
@@ -90,9 +90,6 @@ public class AppletContextsTransformer extends BodyTransformer {
 				units.insertBefore(jcmlCodeAssignment, finalInvokeThrowItStmt);
 				units.insertAfter(ifStmt, jcmlCodeAssignment);
 			}
-			
-			System.out.println(body);
-			Util.printMethod(body);
 		}
 	}
 }
