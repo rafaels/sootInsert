@@ -169,7 +169,7 @@ public class AppletContextsTransformer extends BodyTransformer {
 			SootFieldRef jcmlErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, Util.eChannelTipoToStatic(channel.tipo), ShortType.v(), true);
 			StaticFieldRef jcmlErrorCode = Jimple.v().newStaticFieldRef(jcmlErrorCodeRef);
 			Stmt jcmlCodeAssignment = Jimple.v().newAssignStmt(jcmlCodeLocal, jcmlErrorCode); //$r4 = EChannelExceptions.SW_?_ERROR
-			Stmt setReasonLocalAssignment = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(instanceLocal, setReasonRef, jcmlCodeLocal));
+			Stmt setReasonLocalAssignment = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(instanceLocal, setReasonRef, IntConstant.v(Util.channelID(channel))));
 
 			//throw instance #2
 			Stmt throwInstance2 = Jimple.v().newThrowStmt(instanceLocal);
