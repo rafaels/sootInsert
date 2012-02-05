@@ -6,9 +6,11 @@ import polyglot.ast.Instanceof;
 
 import soot.Body;
 import soot.BodyTransformer;
+import soot.RefType;
 import soot.Scene;
 import soot.ShortType;
 import soot.SootClass;
+import soot.SootField;
 import soot.SootFieldRef;
 import soot.SootMethod;
 import soot.SootMethodRef;
@@ -16,6 +18,7 @@ import soot.Trap;
 import soot.Unit;
 import soot.Value;
 import soot.jimple.*;
+import soot.jimple.toolkits.scalar.Evaluator;
 import soot.util.Chain;
 import sootInsert.Main;
 import source.Channel;
@@ -115,10 +118,6 @@ public class AppletContextsTransformer extends BodyTransformer {
 		if (!(returnStmt instanceof ReturnStmt)) {
 			returnStmt = Jimple.v().newReturnVoidStmt();
 			units.addLast(returnStmt);
-
-			GotoStmt gotoReturn = Jimple.v().newGotoStmt(returnStmt); //goto return
-			units.insertAfter(gotoReturn, last);
-			last = gotoReturn;
 		}
 
 		//construindo a trap
@@ -135,36 +134,55 @@ public class AppletContextsTransformer extends BodyTransformer {
 		Trap t = Jimple.v().newTrap(echannelExceptionKlass, init, last, caughtIdentity);
 		body.getTraps().add(t);
 
-		SootMethodRef throwItRef = echannelExceptionKlass.getMethodByName("throwIt").makeRef();    //throwIt()
+		SootMethodRef getInstanceRef = echannelExceptionKlass.getMethodByName("getInstance").makeRef();    //getInstance()
+		SootMethodRef setReasonRef = echannelExceptionKlass.getMethodByName("setReason").makeRef();    //getInstance()
 		SootMethodRef getReasonRef = echannelExceptionKlass.getSuperclass().getMethodByName("getReason").makeRef();//getReason()
 
-		VirtualInvokeExpr eReason = Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef); //e.getReason()
-
+		//short eReason
 		soot.Local eReasonLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
 		body.getLocals().add(eReasonLocal);
+		//short jcmlCode
 		soot.Local jcmlCodeLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), ShortType.v());
 		body.getLocals().add(jcmlCodeLocal);
+		//EChannelExceptions instance
+		soot.Local instanceLocal = soot.jimple.Jimple.v().newLocal("$r" + body.getLocalCount(), echannelExceptionKlass.getType());
+		body.getLocals().add(instanceLocal);
 
-		Stmt eReasonLocalAssignment = Jimple.v().newAssignStmt(eReasonLocal, eReason);
-		units.insertAfter(eReasonLocalAssignment, caughtIdentity);
+		//instance = EChannelExceptions.getInstance()
+		Stmt instanceAssignment = Jimple.v().newAssignStmt(instanceLocal, Jimple.v().newStaticInvokeExpr(getInstanceRef));
+		units.insertAfter(instanceAssignment, caughtIdentity);
 
-		InvokeStmt finalInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, eReasonLocal));
-		units.insertAfter(finalInvokeThrowItStmt, eReasonLocalAssignment);
+		//eReason = e.getReason()
+		Stmt eReasonLocalAssignment = Jimple.v().newAssignStmt(eReasonLocal, Jimple.v().newVirtualInvokeExpr(catchRefLocal, getReasonRef));
+		units.insertAfter(eReasonLocalAssignment, instanceAssignment);
+
+		//instance.setReason(eReason)
+		Stmt setReasonAssignment = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(instanceLocal, setReasonRef, eReasonLocal));
+		units.insertAfter(setReasonAssignment, eReasonLocalAssignment);
+
+		//throw instance
+		Stmt throwInstance = Jimple.v().newThrowStmt(instanceLocal);
+		units.insertAfter(throwInstance, setReasonAssignment);
 
 		for (Channel channel : channels) {
-			InvokeStmt channelInvokeThrowItStmt = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(throwItRef, IntConstant.v(Util.channelID(channel))));
-
+			//instance.setReason(EChannelExceptions.SW_?_ERROR) #1
 			SootFieldRef jcmlErrorCodeRef = Scene.v().makeFieldRef(echannelExceptionKlass, Util.eChannelTipoToStatic(channel.tipo), ShortType.v(), true);
 			StaticFieldRef jcmlErrorCode = Jimple.v().newStaticFieldRef(jcmlErrorCodeRef);
-			Stmt jcmlCodeAssignment = Jimple.v().newAssignStmt(jcmlCodeLocal, jcmlErrorCode);
+			Stmt jcmlCodeAssignment = Jimple.v().newAssignStmt(jcmlCodeLocal, jcmlErrorCode); //$r4 = EChannelExceptions.SW_?_ERROR
+			Stmt setReasonLocalAssignment = Jimple.v().newInvokeStmt(Jimple.v().newVirtualInvokeExpr(instanceLocal, setReasonRef, jcmlCodeLocal));
+
+			//throw instance #2
+			Stmt throwInstance2 = Jimple.v().newThrowStmt(instanceLocal);
 
 			Value condition = Jimple.v().newEqExpr(eReasonLocal, jcmlCodeLocal);//colocar os dois em outro canto
 
-			IfStmt ifStmt = Jimple.v().newIfStmt(condition, channelInvokeThrowItStmt);
+			//if (eReason == EChanellExceptions.SW_?_ERROR) -> #1
+			IfStmt ifStmt = Jimple.v().newIfStmt(condition, setReasonLocalAssignment);
 
-			units.insertAfter(channelInvokeThrowItStmt, finalInvokeThrowItStmt);
-			units.insertBefore(jcmlCodeAssignment, finalInvokeThrowItStmt);
+			units.insertBefore(jcmlCodeAssignment, setReasonAssignment);
 			units.insertAfter(ifStmt, jcmlCodeAssignment);
+			units.insertAfter(setReasonLocalAssignment, throwInstance);
+			units.insertAfter(throwInstance2, setReasonLocalAssignment);
 		}
 	}
 }
