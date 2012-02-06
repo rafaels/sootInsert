@@ -48,36 +48,28 @@ public class Util {
 	}
 
 	public static String getSignatureFromSite(String site) {
-		Pattern exp = Pattern.compile("\\s+?\\w+\\s+(\\w+)\\s+(\\w+)\\((,?\\s?(\\w+)\\s+\\w+)?+\\)");
+		Pattern exp = Pattern.compile("(?:\\s+)?\\w+\\s+(\\w+)\\s+([\\w\\.]+)\\.(\\w+)(.+)");
 		Matcher matcher = exp.matcher(site);
 		StringBuffer signature = new StringBuffer();
 
 		if (matcher.matches()) {
-			signature.append(matcher.group(1)); //tipo de retorno
-			signature.append(" ");
-			signature.append(matcher.group(2)); //nome do metodo
-			signature.append("(");
-			//                     for (int i = 4; i < matcher.groupCount();i++) {
-			if (matcher.group(3) != null) {
-				signature.append(matcher.group(4)); //tipo do primeiro parametro
-			}
-			//                     }
-			signature.append(")");
+			String retorno    = matcher.group(1);
+			String classe     = matcher.group(2);
+			String metodo     = matcher.group(3);
+			String parametros = matcher.group(4);
+			parametros = parametros.replace(" ", "");
+
+			signature.append("<" + classe + ": ");
+			signature.append(retorno + " ");
+			signature.append(metodo);
+			signature.append(parametros + ">");
 		}
 
 		return signature.toString();
 	}
 
 	public static String getSignatureFromSignature(String signature) {
-		Pattern exp = Pattern.compile("<.+:\\s(.+)>");
-		Matcher matcher = exp.matcher(signature);
-		StringBuffer signatureBuffer = new StringBuffer();
-
-		if (matcher.matches()) {
-			signatureBuffer.append(matcher.group(1)); //tipo de retorno
-		}
-
-		return signatureBuffer.toString();
+		return signature;
 	}
 
 	public static String eChannelTipoToStatic(String tipo) {

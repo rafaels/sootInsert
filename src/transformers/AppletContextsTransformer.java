@@ -39,7 +39,8 @@ public class AppletContextsTransformer extends BodyTransformer {
 		List<Channel> channels = Main.getChannelsFromSite(signature);
 
 		if (channels != null) { //é um método que está associado ao menos com um canal
-			transformContext(body, signature, channels);
+			System.out.println("Raising Site transforming: " + signature);
+			transformContext(body, channels);
 		}
 
 		if (method.getSignature().matches("<.*:\\svoid process\\(javacard.framework.APDU\\)>")) {
@@ -107,7 +108,7 @@ public class AppletContextsTransformer extends BodyTransformer {
 	}
 
     //usado para aplicar as transformações nos raising sites
-	private void transformContext(Body body, String signature, List<Channel> channels) {
+	private void transformContext(Body body, List<Channel> channels) {
 		//todo método termina com return?
 		Chain<Unit> units = body.getUnits();
 
