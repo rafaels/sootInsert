@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -28,9 +29,17 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
+		String javacardAppDir = args[0];
+		String hostAppDir     = args[1];
+
+		String[] subArgs = Arrays.copyOfRange(args, 2, args.length);
+
+		String[] javacardArgs = makeSootArgs(subArgs, javacardAppDir);
+		String[] hostArgs = makeSootArgs(subArgs, hostAppDir);
+
 		processEChannels();
 		PackManager.v().getPack("jtp").add(new Transform("jtp.appletContextsTransformer", AppletContextsTransformer.v()));
-		soot.Main.main(args);
+		soot.Main.main(javacardArgs);
 	}
 
 	private static void processEChannels() throws IOException, ClassNotFoundException {
@@ -50,5 +59,15 @@ public class Main {
 				}
 			}
 		}
+	}
+
+	private static String[] makeSootArgs(String[] args, String proccessDir) {
+		String[] newArgs = new String[args.length + 2];
+		newArgs[0] = ("-process-dir");
+		newArgs[1] = proccessDir;
+		for (int i = 0; i < args.length; i++) {
+			newArgs[i + 2] = args[i];
+		}
+		return newArgs;
 	}
 }
