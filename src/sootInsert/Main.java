@@ -30,27 +30,24 @@ public class Main {
 	}
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
-		String javacardAppDir = args[0];
-		String hostAppDir     = args[1];
+		String hostOrClient = args[0];
+		String appDir     = args[1];
 
 		String[] subArgs = Arrays.copyOfRange(args, 2, args.length);
 
-		String[] javacardArgs = makeSootArgs(subArgs, javacardAppDir);
-		String[] hostArgs = makeSootArgs(subArgs, hostAppDir);
+		String[] newArgs = makeSootArgs(subArgs, appDir, hostOrClient);
 
 		processEChannels();
 
-		Transform clientTransform = new Transform("jtp.clientTransform", AppletContextsTransformer.v());
-		PackManager.v().getPack("jtp").add(clientTransform);
-		AppletContextsTransformer.v().setActive(true);
-		soot.Main.main(javacardArgs);
-		AppletContextsTransformer.v().setActive(false);
-
-		Transform hostTransform = new Transform("jtp.clientTransform", HostHandlersTransformer.v());
-		PackManager.v().getPack("jtp").add(hostTransform);
-		HostHandlersTransformer.v().setActive(true);
-		soot.Main.main(hostArgs);
-		HostHandlersTransformer.v().setActive(false);
+		if (hostOrClient.equals("client")) {
+			Transform clientTransform = new Transform("jtp.clientTransform", AppletContextsTransformer.v());
+			PackManager.v().getPack("jtp").add(clientTransform);
+			soot.Main.main(newArgs);
+		} else if (hostOrClient.equals("host")) {
+			Transform hostTransform = new Transform("jtp.hostTransform", HostHandlersTransformer.v());
+			PackManager.v().getPack("jtp").add(hostTransform);
+			soot.Main.main(newArgs);
+		}
 	}
 
 	private static void processEChannels() throws IOException, ClassNotFoundException {
@@ -72,13 +69,15 @@ public class Main {
 		}
 	}
 
-	private static String[] makeSootArgs(String[] args, String proccessDir) {
-		String[] newArgs = new String[args.length + 2];
-		newArgs[0] = ("-process-dir");
+	private static String[] makeSootArgs(String[] args, String proccessDir, String outputDir) {
+		String[] newArgs = new String[args.length + 4];
+		newArgs[0] = "-process-dir";
 		newArgs[1] = proccessDir;
 		for (int i = 0; i < args.length; i++) {
 			newArgs[i + 2] = args[i];
 		}
+		newArgs[2+args.length] = "-output-dir";
+		newArgs[3+args.length] = outputDir;
 		return newArgs;
 	}
 }

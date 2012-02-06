@@ -32,18 +32,8 @@ public class AppletContextsTransformer extends BodyTransformer {
 		return instance;
 	}
 
-	private boolean isActive = false;
-
-	public void setActive(boolean active) {
-		isActive = active;
-	}
-
 	@Override
 	protected void internalTransform(Body body, String phaseName, Map options) {
-		if (!isActive) {
-			return;
-		}
-
 		SootMethod method = body.getMethod();
 		String signature = Util.getSignatureFromSignature(method.getSignature());
 		List<Channel> channels = Main.getChannelsFromSite(signature);

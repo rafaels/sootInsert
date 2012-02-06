@@ -12,16 +12,7 @@ public class HostHandlersTransformer extends BodyTransformer {
 		return instance;
 	}
 
-	private boolean isActive = false;
-
-	public void setActive(boolean active) {
-		isActive = active;
-	}
-
 	@Override
 	protected void internalTransform(Body body, String phaseName, Map options) {
-		if (!isActive) {
-			return;
-		}
 	}
 }
