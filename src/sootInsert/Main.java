@@ -14,6 +14,7 @@ import source.Channel;
 import source.Context;
 import source.EChannelsEhandlers;
 import transformers.AppletContextsTransformer;
+import transformers.HostHandlersTransformer;
 import util.Util;
 
 public class Main {
@@ -38,8 +39,18 @@ public class Main {
 		String[] hostArgs = makeSootArgs(subArgs, hostAppDir);
 
 		processEChannels();
-		PackManager.v().getPack("jtp").add(new Transform("jtp.appletContextsTransformer", AppletContextsTransformer.v()));
+
+		Transform clientTransform = new Transform("jtp.clientTransform", AppletContextsTransformer.v());
+		PackManager.v().getPack("jtp").add(clientTransform);
+		AppletContextsTransformer.v().setActive(true);
 		soot.Main.main(javacardArgs);
+		AppletContextsTransformer.v().setActive(false);
+
+		Transform hostTransform = new Transform("jtp.clientTransform", HostHandlersTransformer.v());
+		PackManager.v().getPack("jtp").add(hostTransform);
+		HostHandlersTransformer.v().setActive(true);
+		soot.Main.main(hostArgs);
+		HostHandlersTransformer.v().setActive(false);
 	}
 
 	private static void processEChannels() throws IOException, ClassNotFoundException {
