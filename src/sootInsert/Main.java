@@ -47,6 +47,8 @@ public class Main {
 			Transform hostTransform = new Transform("jtp.hostTransform", HostHandlersTransformer.v());
 			PackManager.v().getPack("jtp").add(hostTransform);
 			soot.Main.main(newArgs);
+		} else {
+			throw new IllegalArgumentException("O primeiro parâmetro deve ser ou 'client' ou 'host'");
 		}
 	}
 
