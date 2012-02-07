@@ -13,12 +13,16 @@ import soot.Transform;
 import source.Channel;
 import source.Context;
 import source.EChannelsEhandlers;
+import source.Handler;
 import transformers.AppletContextsTransformer;
 import transformers.HostHandlersTransformer;
 import util.Util;
 
 public class Main {
 	private static HashMap<String, List<Channel>> methodToChannels = new HashMap<String, List<Channel>>();
+	private static HashMap<String, Channel> channels = new HashMap<String, Channel>();
+	private static HashMap<Channel, List<Handler>> ChannelToHandlers = new HashMap<Channel, List<Handler>>();
+
 	private static EChannelsEhandlers dadosDesS;
 
 	public static EChannelsEhandlers getDadosCanais() {
@@ -27,6 +31,14 @@ public class Main {
 
 	public static List<Channel> getChannelsFromSite(String signature) {
 		return methodToChannels.get(signature);
+	}
+
+	public static List<Channel> getChannels() {
+		return dadosDesS.listaDeCanaisSerializavel;
+	}
+
+	public static List<Handler> getHandlersFromChannel(Channel channel) {
+		return ChannelToHandlers.get(channel);
 	}
 
 	public static void main(String[] args) throws IOException, ClassNotFoundException {
@@ -58,6 +70,10 @@ public class Main {
 		dadosDesS = (EChannelsEhandlers) in.readObject();
 
 		for (Channel canal : Main.getDadosCanais().listaDeCanaisSerializavel) {
+			if (!channels.containsKey(canal.nome)){
+				channels.put(canal.nome, canal);
+			}
+
 			for (Context context : canal.listaE) {
 				for (String site : context.raisingSites) {
 					String signature = Util.getSignatureFromSite(site);
@@ -68,18 +84,34 @@ public class Main {
 					methodToChannels.get(signature).add(canal);
 				}
 			}
+
+			ArrayList<Handler> handlers = new ArrayList<Handler>();
+			for (Handler handler : Main.getDadosCanais().listaDeTratadoresSerializavel) {
+				if (handler.canal.equals(canal.nome)) {
+					handlers.add(handler);
+				}
+			}
+			ChannelToHandlers.put(canal, handlers);
 		}
 	}
 
 	private static String[] makeSootArgs(String[] args, String proccessDir, String outputDir) {
-		String[] newArgs = new String[args.length + 4];
-		newArgs[0] = "-process-dir";
-		newArgs[1] = proccessDir;
-		for (int i = 0; i < args.length; i++) {
-			newArgs[i + 2] = args[i];
+		String[] newArgs;
+		int next = 0;
+		if (outputDir.equals("host")) {
+			newArgs = new String[args.length + 6];
+			newArgs[next++] = "-process-dir";
+			newArgs[next++] = "testeBin/handlers/";
+		} else {
+			newArgs = new String[args.length + 4];
 		}
-		newArgs[2+args.length] = "-output-dir";
-		newArgs[3+args.length] = outputDir;
+		newArgs[next++] = "-process-dir";
+		newArgs[next++] = proccessDir;
+		for (int i = 0; i < args.length; i++) {
+			newArgs[next++] = args[i];
+		}
+		newArgs[next++] = "-output-dir";
+		newArgs[next++] = outputDir;
 		return newArgs;
 	}
 }
