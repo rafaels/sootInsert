@@ -46,8 +46,7 @@ public class HostHandlersTransformer extends BodyTransformer {
 					if (transmitMethod == invokeMethod) {
 						Value v = stmt.getLeftOp(); //é um ResponseAPDU
 						if (v instanceof Local) {
-							System.out.println(stmt);
-							System.out.println(next);
+							System.out.println("Hardcore Handling " + body.getMethod().getSignature() + "...");
 							Local l = (Local) v;
 
 							//short e = l.getSW()
@@ -67,7 +66,6 @@ public class HostHandlersTransformer extends BodyTransformer {
 
 								Unit last = units.getLast();
 								for (Handler handler : Main.getHandlersFromChannel(canal)) {
-									System.out.println(handler.metodo);
 									SootMethodRef ref = handlerKlass.getMethodByName(handler.metodo).makeRef();
 									Stmt invokeHandler = Jimple.v().newInvokeStmt(Jimple.v().newStaticInvokeExpr(ref));
 									units.addLast(invokeHandler);
