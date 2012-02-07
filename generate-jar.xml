@@ -3,7 +3,7 @@
     <!--this file was created by Eclipse Runnable JAR Export Wizard-->
     <!--ANT 1.7 is required                                        -->
     <target name="create_run_jar">
-        <jar destfile="/home/rafaels/workspace/eclipse/sootInsert/sootInsert.jar">
+        <jar destfile="sootInsert.jar">
             <manifest>
                 <attribute name="Main-Class" value="org.eclipse.jdt.internal.jarinjarloader.JarRsrcLoader"/>
                 <attribute name="Rsrc-Main-Class" value="sootInsert.Main"/>
@@ -11,9 +11,9 @@
                 <attribute name="Rsrc-Class-Path" value="./ soot-2.4.0.jar EChannelCompiler.jar"/>
             </manifest>
             <zipfileset src="jar-in-jar-loader.zip"/>
-            <fileset dir="/home/rafaels/workspace/eclipse/sootInsert/bin"/>
-            <zipfileset dir="/home/rafaels/workspace/eclipse/sootInsert/lib" includes="soot-2.4.0.jar"/>
-            <zipfileset dir="/home/rafaels/workspace/eclipse/sootInsert/lib" includes="EChannelCompiler.jar"/>
+            <fileset dir="bin"/>
+            <zipfileset dir="lib" includes="soot-2.4.0.jar"/>
+            <zipfileset dir="lib" includes="EChannelCompiler.jar"/>
         </jar>
     </target>
 </project>
